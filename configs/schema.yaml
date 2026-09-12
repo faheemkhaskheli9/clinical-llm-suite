@@ -2,8 +2,8 @@
 #
 # This file documents the policy enforced in code by
 # `src/clinical_core/schemas.py` (`SCHEMA_REGISTRY`, `LATEST_SCHEMA_VERSION`,
-# `OLDER_SUPPORTED_VERSIONS`) — see CLAUDE.md rule 15: keep the two in sync,
-# don't let this drift into just a comment (`tests/test_schemas.py::
+# `OLDER_SUPPORTED_VERSIONS`) — keep the two in sync, don't let this drift
+# into just a comment (`tests/test_schemas.py::
 # test_registry_matches_configs_schema_yaml` asserts equality).
 latest_version: "1.0"
 older_supported_versions: []

@@ -85,8 +85,8 @@ def test_schema_compatibility_classification():
 
 
 def test_registry_matches_configs_schema_yaml():
-    """CLAUDE.md rule 15: duplicated data (the version list, here) needs a
-    test asserting the copies match, not just a comment."""
+    """Duplicated data (the version list, here) needs a test asserting the
+    copies match, not just a comment."""
     with open(CONFIGS_SCHEMA_YAML, encoding="utf-8") as f:
         policy = yaml.safe_load(f)
 
