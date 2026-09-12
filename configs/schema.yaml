@@ -1,0 +1,25 @@
+# Patient-record schema versioning policy.
+#
+# This file documents the policy enforced in code by
+# `src/clinical_core/schemas.py` (`SCHEMA_REGISTRY`, `LATEST_SCHEMA_VERSION`,
+# `OLDER_SUPPORTED_VERSIONS`) — see CLAUDE.md rule 15: keep the two in sync,
+# don't let this drift into just a comment (`tests/test_schemas.py::
+# test_registry_matches_configs_schema_yaml` asserts equality).
+latest_version: "1.0"
+older_supported_versions: []
+versions:
+  "1.0":
+    compatibility: current
+    fields:
+      patient_id: {type: str, required: true}
+      vitals.temperature_c: {type: float, min: 25.0, max: 45.0}
+      vitals.heart_rate_bpm: {type: int, min: 0, max: 300}
+      vitals.respiratory_rate_bpm: {type: int, min: 0, max: 100}
+      vitals.systolic_bp_mmhg: {type: int, min: 0, max: 300}
+      vitals.diastolic_bp_mmhg: {type: int, min: 0, max: 200}
+      vitals.spo2_pct: {type: float, min: 0.0, max: 100.0}
+      symptoms[].name: {type: str, required: true}
+      symptoms[].duration_days: {type: float, min: 0}
+      symptoms[].severity: {type: int, min: 1, max: 10}
+      history[].condition: {type: str, required: true}
+      history[].diagnosed_year: {type: int, min: 1900}

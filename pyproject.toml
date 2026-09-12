@@ -3,3 +3,12 @@ name = "clinical-llm-suite"
 version = "0.1.0"
 description = "Clinical LLM Suite: patient-intake assistant, human review portal, and summarization/extraction pipeline behind one feature picker"
 requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
