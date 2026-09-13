@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "dashboard",
     "review_portal",
+    "dag_extraction",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -38,6 +38,7 @@ FEATURES: tuple[Feature, ...] = (
             "Schema-validated field extraction (vitals, symptoms, history) "
             "from a raw conversation via a PromptFlow-style DAG."
         ),
+        url_name="dag-extraction",
     ),
     Feature(
         slug="review-portal",

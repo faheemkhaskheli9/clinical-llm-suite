@@ -22,7 +22,15 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   recommendations
 - `dag_extraction` feature app — ported from `clinical-summary-promptflow`:
   schema-validated field extraction with missing-value handling,
-  summarization node
+  summarization node. Issue #8 added the actual extraction step (that repo
+  only ever had the field shapes — `VitalsSchema`/`SymptomSchema` — and a
+  CLI that validated an already-structured JSON blob, never text-in
+  extraction): deterministic regex/keyword matching over raw conversation
+  text, standing in for an LLM extraction call per the CPU-only/no-paid-API
+  rule, that assembles vitals/symptoms/history and validates the result
+  through `clinical_core.schemas.validate_patient_record` before handing it
+  back; each field group with nothing found is flagged in
+  `ExtractionResult.missing_fields` rather than silently left empty.
 - `review_portal` feature app — ported from `clinical-ai-review-platform`'s
   already-implemented Django queue (`POST/GET /api/review-items/`). List/detail
   pages landed in issue #5 (`ReviewItem` ORM model extending the archived

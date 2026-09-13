@@ -15,5 +15,6 @@ urlpatterns = [
     path("api/", include("clinical_core.urls")),
     path("api/", include("review_portal.api_urls")),
     path("review/", include("review_portal.urls")),
+    path("dag-extraction/", include("dag_extraction.urls")),
     path("", include("dashboard.urls")),
 ]

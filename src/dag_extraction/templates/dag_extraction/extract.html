@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DAG Extraction — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+  <h1>DAG Extraction</h1>
+  <p>Paste a raw clinical conversation and extract vitals, symptoms, and
+  history as schema-validated structured fields.</p>
+
+  {% if error %}
+  <p><strong>{{ error }}</strong></p>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <label>Patient ID
+      <input type="text" name="patient_id" value="{{ patient_id }}">
+    </label>
+    <br>
+    <label>Conversation text
+      <textarea name="text" rows="8" cols="60">{{ text }}</textarea>
+    </label>
+    <br>
+    <button type="submit">Extract</button>
+  </form>
+
+  {% if result %}
+  <section>
+    <h2>Extraction result</h2>
+    <p>Missing field groups: {{ result.missing_fields|join:", "|default:"none" }}</p>
+
+    {% if result.record %}
+    <p>Passed clinical_core schema validation.</p>
+    <h3>Vitals</h3>
+    <ul>
+      <li>Temperature (C): {{ result.record.vitals.temperature_c|default:"—" }}</li>
+      <li>Heart rate (bpm): {{ result.record.vitals.heart_rate_bpm|default:"—" }}</li>
+      <li>Respiratory rate (bpm): {{ result.record.vitals.respiratory_rate_bpm|default:"—" }}</li>
+      <li>Blood pressure: {{ result.record.vitals.systolic_bp_mmhg|default:"—" }}/{{ result.record.vitals.diastolic_bp_mmhg|default:"—" }}</li>
+      <li>SpO2 (%): {{ result.record.vitals.spo2_pct|default:"—" }}</li>
+    </ul>
+    <h3>Symptoms</h3>
+    <ul>
+      {% for symptom in result.record.symptoms %}
+      <li>{{ symptom.name }} — duration: {{ symptom.duration_days|default:"—" }} day(s), severity: {{ symptom.severity|default:"—" }}</li>
+      {% empty %}
+      <li>None found.</li>
+      {% endfor %}
+    </ul>
+    <h3>History</h3>
+    <ul>
+      {% for item in result.record.history %}
+      <li>{{ item.condition }}{% if item.diagnosed_year %} (diagnosed {{ item.diagnosed_year }}){% endif %}</li>
+      {% empty %}
+      <li>None found.</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p><strong>Extraction failed schema validation:</strong></p>
+    <ul>
+      {% for message in result.validation_errors %}
+      <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+</body>
+</html>
