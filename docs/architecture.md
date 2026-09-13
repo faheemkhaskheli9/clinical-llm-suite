@@ -37,6 +37,11 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   record and its summary together in `ExtractionRecord`; a summarization
   failure (nothing to summarize) is caught and recorded
   (`summarization_failed=True`) rather than blocking the extraction save.
+  Issue #10 added `dag_extraction.eval_harness`: a fixed set of example
+  inputs run through both nodes and scored pass/fail against expected
+  fields/summarization outcome, offline (no DB write, no network) — the
+  same role a prompt-eval harness plays, standing in for one since there's
+  no real prompt to evaluate.
 - `review_portal` feature app — ported from `clinical-ai-review-platform`'s
   already-implemented Django queue (`POST/GET /api/review-items/`). List/detail
   pages landed in issue #5 (`ReviewItem` ORM model extending the archived
