@@ -28,8 +28,10 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   pages landed in issue #5 (`ReviewItem` ORM model extending the archived
   app's shape with `patient_id`/`quality_rating`/`reviewer_comments`/
   `assigned_to` to match `clinical_core.review.ReviewItem`'s contract);
-  accept/reject controls are shown but wired up once reviewer roles/
-  permissions land (issue #7).
+  `POST/GET /api/review-items/` landed in issue #6, validating create
+  payloads against `clinical_core.review.ReviewItem` instead of hand-checked
+  fields; accept/reject controls are shown but wired up once reviewer
+  roles/permissions land (issue #7).
 
 ## Shared validation entry point (issue #4)
 
