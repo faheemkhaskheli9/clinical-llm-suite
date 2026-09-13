@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Review item {{ item.id }} — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'review-queue' %}">&larr; Back to queue</a></p>
+  <h1>Review Portal</h1>
+  <h2>Review item {{ item.id }}</h2>
+  <dl>
+    <dt>Source</dt><dd>{{ item.source }}</dd>
+    <dt>Patient ID</dt><dd>{{ item.patient_id }}</dd>
+    <dt>Status</dt><dd>{{ item.get_status_display }}</dd>
+    <dt>Summary</dt><dd>{{ item.summary }}</dd>
+    <dt>Quality rating</dt><dd>{{ item.quality_rating|default:"—" }}</dd>
+    <dt>Reviewer comments</dt><dd>{{ item.reviewer_comments|default:"—" }}</dd>
+    <dt>Assigned to</dt><dd>{{ item.assigned_to|default:"Unassigned" }}</dd>
+    <dt>Created</dt><dd>{{ item.created_at }}</dd>
+    <dt>Updated</dt><dd>{{ item.updated_at }}</dd>
+  </dl>
+  <section>
+    <h3>Review controls</h3>
+    <p><em>Accept/reject, quality rating, and reviewer comments are wired
+    up once reviewer roles/permissions land (issue #7) — every field a
+    reviewer needs to decide is already shown above.</em></p>
+    <button type="button" disabled>Accept</button>
+    <button type="button" disabled>Reject</button>
+  </section>
+</body>
+</html>

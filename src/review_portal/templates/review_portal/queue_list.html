@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Review Portal — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+  <h1>Review Portal</h1>
+  <p>Queue filtered by status: <strong>{{ status }}</strong></p>
+  <ul>
+    {% for value, label in statuses %}
+      <li><a href="?status={{ value }}">{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+  <table>
+    <thead>
+      <tr><th>Source</th><th>Patient</th><th>Summary</th><th>Status</th><th>Created</th></tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.source }}</td>
+        <td>{{ item.patient_id }}</td>
+        <td><a href="{% url 'review-item-detail' item_id=item.id %}">{{ item.summary|truncatewords:12 }}</a></td>
+        <td>{{ item.get_status_display }}</td>
+        <td>{{ item.created_at }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">No review items with status &ldquo;{{ status }}&rdquo;.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

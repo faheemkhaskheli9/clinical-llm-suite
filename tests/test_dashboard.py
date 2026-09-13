@@ -34,7 +34,7 @@ def test_each_feature_links_to_a_real_working_flow(client, django_user_model):
     for feature in FEATURES:
         url = reverse("feature", kwargs={"slug": feature.slug})
         assert url.encode() in client.get(reverse("dashboard")).content
-        resp = client.get(url)
+        resp = client.get(url, follow=True)
         assert resp.status_code == 200
         assert feature.title.encode() in resp.content
 

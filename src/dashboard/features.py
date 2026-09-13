@@ -16,6 +16,10 @@ class Feature:
     slug: str
     title: str
     description: str
+    url_name: str | None = None
+    """Name of the real feature app's own URL to redirect to once it exists
+    (Phases 2-4). None means it isn't built yet, so the dashboard link falls
+    back to `feature_stub`'s placeholder page."""
 
 
 FEATURES: tuple[Feature, ...] = (
@@ -42,6 +46,7 @@ FEATURES: tuple[Feature, ...] = (
             "Human-in-the-loop review queue for AI-generated clinical "
             "summaries: accept/reject, quality rating, reviewer comments."
         ),
+        url_name="review-queue",
     ),
 )
 

@@ -13,5 +13,6 @@ urlpatterns = [
         name="logout",
     ),
     path("api/", include("clinical_core.urls")),
+    path("review/", include("review_portal.urls")),
     path("", include("dashboard.urls")),
 ]

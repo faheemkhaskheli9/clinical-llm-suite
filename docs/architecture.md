@@ -24,7 +24,12 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   schema-validated field extraction with missing-value handling,
   summarization node
 - `review_portal` feature app — ported from `clinical-ai-review-platform`'s
-  already-implemented Django queue (`POST/GET /api/review-items/`)
+  already-implemented Django queue (`POST/GET /api/review-items/`). List/detail
+  pages landed in issue #5 (`ReviewItem` ORM model extending the archived
+  app's shape with `patient_id`/`quality_rating`/`reviewer_comments`/
+  `assigned_to` to match `clinical_core.review.ReviewItem`'s contract);
+  accept/reject controls are shown but wired up once reviewer roles/
+  permissions land (issue #7).
 
 ## Shared validation entry point (issue #4)
 
