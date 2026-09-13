@@ -26,6 +26,20 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
 - `review_portal` feature app — ported from `clinical-ai-review-platform`'s
   already-implemented Django queue (`POST/GET /api/review-items/`)
 
+## Shared validation entry point (issue #4)
+
+`clinical_core.views.validate_patient_record_view` —
+`POST /api/patient-records/validate/` — is the one place a candidate patient
+record is checked against `clinical_core.schemas.validate_patient_record`
+before it is persisted. `chat_intake` and `dag_extraction` (Phase 3/4) must
+route through it (over HTTP from client-side JS, or in-process via
+`clinical_core.views.validate_patient_record_payload` from server-side code)
+rather than reimplementing validation or hand-rolling their own error
+response — that keeps a schema violation looking identical no matter which
+feature app produced the record. `review_portal` doesn't call it: it only
+persists a `ReviewItem` (draft summary + rating), never a full patient
+record.
+
 ## Design Notes
 
 - Registry pattern for feature apps (mirrors `medical-imaging-suite`'s

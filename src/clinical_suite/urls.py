@@ -12,5 +12,6 @@ urlpatterns = [
         auth_views.LogoutView.as_view(next_page="login"),
         name="logout",
     ),
+    path("api/", include("clinical_core.urls")),
     path("", include("dashboard.urls")),
 ]
