@@ -4,12 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from .extraction import extract_patient_record
+from .pipeline import run_pipeline
 
 
 @login_required
 def extract(request: HttpRequest) -> HttpResponse:
     result = None
+    record = None
     text = ""
     patient_id = ""
     error = None
@@ -25,10 +26,10 @@ def extract(request: HttpRequest) -> HttpResponse:
         elif not text.strip():
             error = "Paste some conversation text to extract from."
         else:
-            result = extract_patient_record(text, patient_id=patient_id)
+            record, result = run_pipeline(text, patient_id=patient_id)
 
     return render(
         request,
         "dag_extraction/extract.html",
-        {"result": result, "text": text, "patient_id": patient_id, "error": error},
+        {"result": result, "record": record, "text": text, "patient_id": patient_id, "error": error},
     )

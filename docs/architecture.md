@@ -30,7 +30,13 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   rule, that assembles vitals/symptoms/history and validates the result
   through `clinical_core.schemas.validate_patient_record` before handing it
   back; each field group with nothing found is flagged in
-  `ExtractionResult.missing_fields` rather than silently left empty.
+  `ExtractionResult.missing_fields` rather than silently left empty. Issue #9
+  added the summarization node (`dag_extraction.summarization`, template
+  assembly standing in for an LLM call the same way) and
+  `dag_extraction.pipeline.run_pipeline`, which persists the extracted
+  record and its summary together in `ExtractionRecord`; a summarization
+  failure (nothing to summarize) is caught and recorded
+  (`summarization_failed=True`) rather than blocking the extraction save.
 - `review_portal` feature app — ported from `clinical-ai-review-platform`'s
   already-implemented Django queue (`POST/GET /api/review-items/`). List/detail
   pages landed in issue #5 (`ReviewItem` ORM model extending the archived

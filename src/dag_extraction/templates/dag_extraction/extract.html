@@ -33,7 +33,16 @@
     <p>Missing field groups: {{ result.missing_fields|join:", "|default:"none" }}</p>
 
     {% if result.record %}
-    <p>Passed clinical_core schema validation.</p>
+    <p>Passed clinical_core schema validation. Saved as record {{ record.id }}.</p>
+
+    <h3>Summary</h3>
+    {% if record.summarization_failed %}
+    <p><em>Summarization failed (nothing to summarize) — the extracted
+    record above was still saved.</em></p>
+    {% else %}
+    <p>{{ record.summary }}</p>
+    {% endif %}
+
     <h3>Vitals</h3>
     <ul>
       <li>Temperature (C): {{ result.record.vitals.temperature_c|default:"—" }}</li>
