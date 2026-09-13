@@ -30,8 +30,13 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   `assigned_to` to match `clinical_core.review.ReviewItem`'s contract);
   `POST/GET /api/review-items/` landed in issue #6, validating create
   payloads against `clinical_core.review.ReviewItem` instead of hand-checked
-  fields; accept/reject controls are shown but wired up once reviewer
-  roles/permissions land (issue #7).
+  fields. Issue #7 added a `Reviewers` auth group (seeded by a data
+  migration, holding the `change_reviewitem`/`view_reviewitem` permissions
+  Django auto-generates for the model), the `decide` view (accept/reject +
+  quality rating + comments + a required error-taxonomy category on reject),
+  and an analytics dashboard aggregating outcomes by reviewer and by day.
+  `clinical-ai-review-platform` never got past planning these three in its
+  own README/docs — there was no code to port, only the shape to match.
 
 ## Shared validation entry point (issue #4)
 

@@ -15,17 +15,37 @@
     <dt>Summary</dt><dd>{{ item.summary }}</dd>
     <dt>Quality rating</dt><dd>{{ item.quality_rating|default:"—" }}</dd>
     <dt>Reviewer comments</dt><dd>{{ item.reviewer_comments|default:"—" }}</dd>
+    <dt>Error category</dt><dd>{{ item.get_error_category_display|default:"—" }}</dd>
     <dt>Assigned to</dt><dd>{{ item.assigned_to|default:"Unassigned" }}</dd>
     <dt>Created</dt><dd>{{ item.created_at }}</dd>
     <dt>Updated</dt><dd>{{ item.updated_at }}</dd>
   </dl>
   <section>
     <h3>Review controls</h3>
-    <p><em>Accept/reject, quality rating, and reviewer comments are wired
-    up once reviewer roles/permissions land (issue #7) — every field a
-    reviewer needs to decide is already shown above.</em></p>
-    <button type="button" disabled>Accept</button>
-    <button type="button" disabled>Reject</button>
+    {% if can_decide %}
+    <form method="post" action="{% url 'review-item-decide' item_id=item.id %}">
+      {% csrf_token %}
+      <label>Quality rating (1-5)
+        <input type="number" name="quality_rating" min="1" max="5">
+      </label>
+      <label>Error category (required if rejecting)
+        <select name="error_category">
+          <option value="">—</option>
+          {% for value, label in error_categories %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Reviewer comments
+        <textarea name="reviewer_comments"></textarea>
+      </label>
+      <button type="submit" name="status" value="accepted">Accept</button>
+      <button type="submit" name="status" value="rejected">Reject</button>
+    </form>
+    {% else %}
+    <p><em>Your account isn't in the Reviewers group, so you can't decide
+    this item.</em></p>
+    {% endif %}
   </section>
 </body>
 </html>

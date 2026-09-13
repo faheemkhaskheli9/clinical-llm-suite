@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Review Analytics — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'review-queue' %}">&larr; Back to queue</a></p>
+  <h1>Review Analytics</h1>
+
+  <h2>By reviewer</h2>
+  <table>
+    <thead><tr><th>Reviewer</th><th>Status</th><th>Count</th></tr></thead>
+    <tbody>
+      {% for row in by_reviewer %}
+      <tr>
+        <td>{{ row.assigned_to }}</td>
+        <td>{{ row.status }}</td>
+        <td>{{ row.count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No decided items yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>By day</h2>
+  <table>
+    <thead><tr><th>Day</th><th>Status</th><th>Count</th></tr></thead>
+    <tbody>
+      {% for row in by_day %}
+      <tr>
+        <td>{{ row.day|date:"Y-m-d" }}</td>
+        <td>{{ row.status }}</td>
+        <td>{{ row.count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No review items yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
