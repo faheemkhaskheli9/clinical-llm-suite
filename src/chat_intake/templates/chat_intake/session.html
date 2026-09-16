@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Chat Intake — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+  <h1>Chat Intake</h1>
+  <p>Patient: {{ session.patient_id }} — status: {{ session.status }}</p>
+
+  <ul>
+    {% for turn in turns %}
+    <li>{{ turn.patient_text }}</li>
+    {% endfor %}
+  </ul>
+
+  {% if error %}<p>{{ error }}</p>{% endif %}
+
+  {% if session.status == "complete" %}
+    <p>Intake complete.</p>
+    {% if session.extraction_record %}
+      <p>Extraction saved as {{ session.extraction_record.id }}.</p>
+    {% else %}
+      <p>Reached the turn limit without a complete record.</p>
+    {% endif %}
+  {% else %}
+    <p>{{ pending_question }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <textarea name="patient_text"></textarea>
+      <button type="submit">Send</button>
+    </form>
+  {% endif %}
+</body>
+</html>

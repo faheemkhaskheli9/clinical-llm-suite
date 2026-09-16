@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "dashboard",
     "review_portal",
     "dag_extraction",
+    "chat_intake",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

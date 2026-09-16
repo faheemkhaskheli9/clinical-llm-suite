@@ -1,9 +1,8 @@
 """The 3 feature-picker entries shown on the dashboard.
 
-A plain list for now — Phase 1 only needs a shell. Once chat_intake,
-dag_extraction, and review_portal land as real feature apps (Phases 2-4),
-this becomes the seed for the registry pattern docs/architecture.md
-describes (mirroring medical-imaging-suite's BaseImagingTask/@register_task)
+A plain list for now — this becomes the seed for the registry pattern
+docs/architecture.md describes (mirroring medical-imaging-suite's
+BaseImagingTask/@register_task) once every feature app has fully landed,
 rather than a shape that needs reworking.
 """
 from __future__ import annotations
@@ -30,6 +29,7 @@ FEATURES: tuple[Feature, ...] = (
             "Conversational patient intake with dynamic follow-up questions, "
             "structured extraction, and RAG-backed recommendations."
         ),
+        url_name="chat-intake-start",
     ),
     Feature(
         slug="dag-extraction",

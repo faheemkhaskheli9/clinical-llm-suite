@@ -16,5 +16,6 @@ urlpatterns = [
     path("api/", include("review_portal.api_urls")),
     path("review/", include("review_portal.urls")),
     path("dag-extraction/", include("dag_extraction.urls")),
+    path("chat-intake/", include("chat_intake.urls")),
     path("", include("dashboard.urls")),
 ]
