@@ -10,19 +10,26 @@ everything that phase would have needed: `clinical_core`'s schema-validated
 with accumulated patient text one turn at a time, rather than
 re-implementing extraction.
 
-Follow-up questions are a fixed, ordered list of the missing field groups
-(one question per group), not an adaptive choice — see issue #12 for
-dynamic follow-up logic. The loop still needs a deliberate termination rule
-(knowledge-base "stateful agentic run lifecycle" pattern: combine a
-semantic-completion check with a hard iteration cap rather than relying on
-either alone): stop once every field group has something extracted, or
-after MAX_TURNS, whichever comes first.
+Follow-up questions are mostly a fixed, ordered list of the missing field
+groups (one question per group) — the loop still needs a deliberate
+termination rule (knowledge-base "stateful agentic run lifecycle" pattern:
+combine a semantic-completion check with a hard iteration cap rather than
+relying on either alone): stop once every field group has something
+extracted, or after MAX_TURNS, whichever comes first.
+
+Symptoms are the one field group with a dynamic follow-up (issue #12): once
+the patient has named a symptom but its duration/severity is still missing,
+the next question targets that specific symptom (`_adaptive_symptom_followup`)
+instead of the generic "what symptoms" question — the question depends on
+what the patient already said, not a fixed script. A named symptom with no
+matching follow-up rule falls back to the ordinary FIELD_ORDER question
+rather than raising.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dag_extraction.extraction import extract_patient_record
+from dag_extraction.extraction import extract_patient_record, extract_symptoms
 from dag_extraction.models import ExtractionRecord
 from dag_extraction.pipeline import run_pipeline
 
@@ -43,6 +50,27 @@ QUESTIONS: dict[str, str] = {
 
 OPENING_QUESTION = QUESTIONS[FIELD_ORDER[0]]
 
+# One targeted follow-up per keyword `dag_extraction.extraction` knows how to
+# spot (mirrors its `_SYMPTOM_KEYWORDS`). Keyed by symptom name so a symptom
+# `extract_symptoms` finds but this dict has no rule for (there is no such
+# keyword today, but a future extraction-side addition could outpace this
+# list) falls back to the generic question rather than raising a KeyError.
+_SYMPTOM_FOLLOWUPS: dict[str, str] = {
+    "cough": "How long have you had that cough, and does it produce anything?",
+    "fever": "How high has your fever gotten, and how long has it lasted?",
+    "headache": "How severe is the headache -- mild, moderate, or severe?",
+    "nausea": "How long has the nausea lasted?",
+    "fatigue": "How long have you been feeling fatigued?",
+    "vomiting": "How many times have you vomited, and over what period?",
+    "dizziness": "How long have you felt dizzy, and does it come and go?",
+    "chest pain": "How severe is the chest pain, and does it radiate anywhere?",
+    "shortness of breath": (
+        "Does the shortness of breath happen at rest or only with activity, "
+        "and how long has it lasted?"
+    ),
+    "sore throat": "How long has your throat been sore?",
+}
+
 
 @dataclass
 class TurnResult:
@@ -59,7 +87,24 @@ def _combined_text(session: ChatSession) -> str:
     return "\n".join(turn.patient_text for turn in session.turns.order_by("turn_index"))
 
 
-def _next_question(missing_fields: tuple[str, ...]) -> str | None:
+def _adaptive_symptom_followup(text: str) -> str | None:
+    """A named symptom with neither `duration_days` nor `severity` yet gets
+    a targeted follow-up instead of the generic "what symptoms" question —
+    depends on what the patient already said, not a fixed script. Returns
+    `None` (no matching rule, or every named symptom already has detail) so
+    the caller falls back to the ordinary FIELD_ORDER question instead of
+    raising."""
+    for symptom in extract_symptoms(text):
+        if symptom.get("duration_days") is None and symptom.get("severity") is None:
+            return _SYMPTOM_FOLLOWUPS.get(symptom["name"])
+    return None
+
+
+def _next_question(text: str, missing_fields: tuple[str, ...]) -> str | None:
+    if "symptoms" not in missing_fields:
+        adaptive = _adaptive_symptom_followup(text)
+        if adaptive is not None:
+            return adaptive
     for field in FIELD_ORDER:
         if field in missing_fields:
             return QUESTIONS[field]
@@ -72,8 +117,9 @@ def pending_question_for(session: ChatSession) -> str | None:
         return None
     if session.turns.count() == 0:
         return OPENING_QUESTION
-    check = extract_patient_record(_combined_text(session), patient_id=session.patient_id)
-    return _next_question(check.missing_fields)
+    combined = _combined_text(session)
+    check = extract_patient_record(combined, patient_id=session.patient_id)
+    return _next_question(combined, check.missing_fields)
 
 
 def submit_turn(session: ChatSession, patient_text: str) -> TurnResult:

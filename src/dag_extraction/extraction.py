@@ -9,9 +9,15 @@ text in, structured fields out" step those field shapes were waiting for.
 Extraction is deterministic regex/keyword matching, not an LLM call — this
 project's CPU-only / no-paid-APIs rule means the "PromptFlow-style DAG"'s
 extraction node is mocked here rather than calling out to a real LLM; a
-production version would swap `_extract_vitals`/`_extract_symptoms`/
+production version would swap `_extract_vitals`/`extract_symptoms`/
 `_extract_history` for an LLM-backed extraction call behind the same
 `extract_patient_record` signature.
+
+`extract_symptoms` (unlike its vitals/history siblings) is exported rather
+than module-private: chat_intake's dynamic follow-up logic (issue #12) needs
+the raw per-symptom detail (which symptom, whether duration/severity were
+found) to decide whether to ask a targeted follow-up, not just the
+missing-field-groups summary `extract_patient_record` returns.
 """
 from __future__ import annotations
 
@@ -107,7 +113,7 @@ def _extract_vitals(text: str) -> dict:
     return vitals
 
 
-def _extract_symptoms(text: str) -> list[dict]:
+def extract_symptoms(text: str) -> list[dict]:
     lower = text.lower()
     symptoms: list[dict] = []
     for keyword in _SYMPTOM_KEYWORDS:
@@ -152,7 +158,7 @@ def extract_patient_record(text: str, *, patient_id: str) -> ExtractionResult:
     it back — acceptance criterion "Extraction output passes clinical_core
     schema validation before being persisted"."""
     vitals = _extract_vitals(text)
-    symptoms = _extract_symptoms(text)
+    symptoms = extract_symptoms(text)
     history = _extract_history(text)
 
     missing = tuple(
