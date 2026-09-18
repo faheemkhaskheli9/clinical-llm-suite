@@ -2,9 +2,13 @@
 import pytest
 from django.urls import reverse
 
-from chat_intake import conversation
+from chat_intake import conversation, recommendations
 from chat_intake.conversation import MAX_TURNS, submit_turn
 from chat_intake.models import ChatSession
+from clinical_core.rag import ingest
+from clinical_core.rag.embeddings import HashingEmbedder
+from clinical_core.rag.schema import DocType, SourceDocument
+from clinical_core.rag.vector_store import JSONVectorStore
 
 pytestmark = pytest.mark.django_db
 
@@ -172,3 +176,100 @@ def test_dashboard_chat_intake_link_redirects_to_real_feature(client, django_use
 
     assert resp.status_code == 302
     assert resp.url == reverse("chat-intake-start")
+
+
+# --- issue #14: RAG-backed recommendations wired into chat intake -------
+
+
+def test_completing_a_session_persists_a_generic_recommendation_by_default(client, django_user_model):
+    """With no RAG store ingested (the default, empty store), completion
+    still produces a recommendation, but a clearly-labeled generic one --
+    never a fabricated citation."""
+    _login(client, django_user_model)
+    client.post(reverse("chat-intake-start"), {"patient_id": "p-8"})
+    session = ChatSession.objects.get()
+    url = reverse("chat-intake-session", kwargs={"session_id": session.id})
+
+    resp = client.post(
+        url,
+        {
+            "patient_text": (
+                "Temperature is 38.0C, heart rate 90 bpm, BP 120/80, SpO2 97%. "
+                "Cough for 2 days, severity 4. History of asthma diagnosed 2018."
+            )
+        },
+    )
+
+    session.refresh_from_db()
+    assert session.recommendation_text is not None
+    assert session.recommendation_grounded is False
+    assert session.recommendation_sources == []
+    assert b"General guidance" in resp.content
+    assert b"Recommendation" in resp.content
+
+
+def test_completing_a_session_grounds_the_recommendation_in_a_retrieved_chunk(
+    client, django_user_model, tmp_path, monkeypatch
+):
+    """Core acceptance criterion: when the RAG store has a relevant chunk,
+    the recommendation is grounded and references its source."""
+    store = JSONVectorStore(tmp_path / "store.json")
+    embedder = HashingEmbedder(dimensions=64)
+    ingest.ingest_documents(
+        [
+            SourceDocument(
+                id="medlineplus:asthma",
+                doc_type=DocType.DISEASE,
+                source="medlineplus",
+                title="Asthma",
+                section="overview",
+                text="asthma cough wheezing shortness of breath treatment plan",
+                url="https://medlineplus.gov/asthma.html",
+            )
+        ],
+        embedder,
+        store,
+    )
+    monkeypatch.setattr(recommendations, "default_store", lambda: store)
+    monkeypatch.setattr(recommendations, "default_embedder", lambda: embedder)
+    monkeypatch.setattr(recommendations, "MIN_SIMILARITY", 0.01)
+
+    _login(client, django_user_model)
+    client.post(reverse("chat-intake-start"), {"patient_id": "p-9"})
+    session = ChatSession.objects.get()
+    url = reverse("chat-intake-session", kwargs={"session_id": session.id})
+
+    resp = client.post(
+        url,
+        {
+            "patient_text": (
+                "Temperature is 38.0C, heart rate 90 bpm, BP 120/80, SpO2 97%. "
+                "Cough for 2 days, severity 4. History of asthma diagnosed 2018."
+            )
+        },
+    )
+
+    session.refresh_from_db()
+    assert session.recommendation_grounded is True
+    assert session.recommendation_sources
+    assert session.recommendation_sources[0]["title"] == "Asthma"
+    assert b"Asthma" in resp.content
+    assert b"General guidance" not in resp.content
+
+
+def test_no_recommendation_is_persisted_when_extraction_finds_nothing_valid(client, django_user_model):
+    """If extraction never produced a valid record at all (forced
+    completion at MAX_TURNS with everything failing validation), there is
+    no patient data to recommend on, so no recommendation is generated --
+    distinct from the generic-fallback case, which still has query text."""
+    _login(client, django_user_model)
+    client.post(reverse("chat-intake-start"), {"patient_id": "p-10"})
+    session = ChatSession.objects.get()
+    url = reverse("chat-intake-session", kwargs={"session_id": session.id})
+
+    for _ in range(MAX_TURNS):
+        client.post(url, {"patient_text": "Temperature is 99.0C."})
+
+    session.refresh_from_db()
+    assert session.extraction_record is None
+    assert session.recommendation_text is None

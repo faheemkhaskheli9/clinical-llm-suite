@@ -21,6 +21,15 @@ class ChatSession(models.Model):
         on_delete=models.SET_NULL,
         related_name="chat_sessions",
     )
+    # Issue #14: the RAG-backed recommendation generated once the session
+    # completes, persisted so it still renders on a later page load (not
+    # just in the response to the completing POST). `recommendation_text`
+    # null means no recommendation was generated at all (extraction found
+    # nothing valid to recommend on) -- distinct from a *generic* fallback
+    # recommendation, which is still non-null text with `grounded=False`.
+    recommendation_text = models.TextField(null=True, blank=True)
+    recommendation_grounded = models.BooleanField(default=False)
+    recommendation_sources = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

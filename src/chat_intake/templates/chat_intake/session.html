@@ -24,6 +24,20 @@
     {% else %}
       <p>Reached the turn limit without a complete record.</p>
     {% endif %}
+    {% if session.recommendation_text %}
+      <div>
+        <h2>Recommendation</h2>
+        {% if not session.recommendation_grounded %}<p><em>Generic (no matching reference found)</em></p>{% endif %}
+        <p>{{ session.recommendation_text|linebreaksbr }}</p>
+        {% if session.recommendation_sources %}
+          <ul>
+            {% for source in session.recommendation_sources %}
+            <li>{{ source.title|default:source.source }} ({{ source.source }})</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
   {% else %}
     <p>{{ pending_question }}</p>
     <form method="post">

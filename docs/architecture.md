@@ -19,7 +19,18 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   (ported from `clinical-ai-review-platform`)
 - `chat_intake` feature app — ported from `clinical-ai-assistant`:
   conversational intake, dynamic follow-ups, extraction, RAG-backed
-  recommendations
+  recommendations. Issue #14 wired the recommendation step
+  (`chat_intake.recommendations.recommend_for_record`) to run once a turn
+  completes the session: it retrieves from the `clinical_core.rag` vector
+  store (via `clinical_core.rag.factory` for the default store/embedder — a
+  local `JSONVectorStore` + `HashingEmbedder` so this runs with no external
+  service) using the extraction's own summary as the query, and only cites
+  a chunk that clears a cosine-similarity floor (`MIN_SIMILARITY`). A
+  retrieval miss — including an empty record with no query text at all —
+  returns a `[General guidance ...]`-prefixed generic recommendation with
+  no sources, never an invented citation; the result (text, `grounded`
+  flag, sources) is persisted on `ChatSession` so it survives a page
+  reload.
 - `dag_extraction` feature app — ported from `clinical-summary-promptflow`:
   schema-validated field extraction with missing-value handling,
   summarization node. Issue #8 added the actual extraction step (that repo
