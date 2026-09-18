@@ -1,0 +1,17 @@
+# Per-source keyword arguments, passed straight into each fetcher's fetch().
+# Run: python scripts/ingest.py
+# Or a subset:   python scripts/ingest.py --sources medlineplus,openfda
+
+medlineplus:
+  seed_terms: null   # null = use the built-in ~50-term seed list in medlineplus.py
+  retmax: 1           # top hit per seed term; raise for more topics per term
+
+openfda:
+  limit: 200          # total drug label records to pull
+  page_size: 100       # per-request page size (openFDA max is 1000)
+
+medquad:
+  max_files: 500      # cap for a first "broad but shallow" pull.
+                        # Full dataset is ~47k QA pairs across ~15k XML files;
+                        # raise this (or remove the cap) once storage/embedding
+                        # cost for the full set is accounted for.
