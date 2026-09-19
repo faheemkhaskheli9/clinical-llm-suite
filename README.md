@@ -8,23 +8,34 @@
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
+## Goal
+
+Let a user turn free-text clinical conversation into structured,
+reviewable clinical data: capture it through an LLM chat-intake flow,
+extract it into a structured DAG (symptoms, history, meds, etc.), and
+validate the result through a human review portal — all on public or
+synthetic clinical text, with no PHI and no employer-identifiable prompts
+or logic.
+
 ## Combines
 
-This is a flagship suite that will combine 3 related clinical-LLM repos into
-one Django web app with all 3 features selectable from a single dashboard
-UI — the same combined-suite pattern already used in this portfolio for
+This flagship suite combines 3 related clinical-LLM repos into one Django
+web app with all 3 features selectable from a single dashboard UI — the
+same combined-suite pattern already used in this portfolio for
 `video-analytics-suite`, `medical-imaging-suite`, and `trading-ai-suite`:
 
-- [`clinical-ai-assistant`](../clinical-ai-assistant/) — patient conversational intake, structured extraction, RAG-backed clinical reasoning, doctor-facing summary
-- [`clinical-summary-promptflow`](../clinical-summary-promptflow/) — schema-validated field extraction (vitals, symptoms, history) from a raw conversation, summarization node, PromptFlow-style DAG
-- [`clinical-ai-review-platform`](../clinical-ai-review-platform/) — human-in-the-loop review queue for AI-generated clinical summaries (accept/reject/rate/comment, reviewer assignment, analytics)
+- [`clinical-ai-assistant`](../portfolio-archived-repos/clinical-ai-assistant/) — patient conversational intake, structured extraction, RAG-backed clinical reasoning, doctor-facing summary
+- [`clinical-summary-promptflow`](../portfolio-archived-repos/clinical-summary-promptflow/) — schema-validated field extraction (vitals, symptoms, history) from a raw conversation, summarization node, PromptFlow-style DAG
+- [`clinical-ai-review-platform`](../portfolio-archived-repos/clinical-ai-review-platform/) — human-in-the-loop review queue for AI-generated clinical summaries (accept/reject/rate/comment, reviewer assignment, analytics)
 
-These 3 already form a pipeline in spirit — intake/extract (`clinical-ai-assistant`
-or `clinical-summary-promptflow`) feeds a summary into the review queue
-(`clinical-ai-review-platform`) — but exist as 3 separate apps today. The 3
-originals will get an archived banner + `status-archived` badge and move to
-`E:\Projects\portfolio-archived-repos\` once this suite reaches feature
-parity with each of them — no code or git history is deleted, only relocated.
+These 3 already formed a pipeline in spirit — intake/extract
+(`clinical-ai-assistant` or `clinical-summary-promptflow`) feeds a summary
+into the review queue (`clinical-ai-review-platform`) — but existed as 3
+separate apps. Now that this suite has reached feature parity with each of
+them (Chat Intake, DAG Extraction, and the Review Portal all wired into one
+shared review queue), the 3 originals each got an archived banner +
+`status-archived` badge and moved to `E:\Projects\portfolio-archived-repos\`
+— no code or git history was deleted, only relocated.
 
 ## 1. Problem
 
