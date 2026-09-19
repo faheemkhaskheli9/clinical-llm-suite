@@ -32,9 +32,18 @@ found nothing valid to build a record from (there is no patient data to
 recommend on), never omitted just because retrieval found no matching
 reference chunks (that case still returns a clearly-labeled generic
 `Recommendation`, per `recommendations.py`).
+
+Issue #15: completion also generates a doctor-facing summary
+(`summary.generate_intake_summary`) from the same extracted record. Unlike
+the recommendation, summary generation is allowed to raise
+(`SummaryGenerationError`) -- this module is what guarantees a summary
+failure never blocks `extraction_record`/`status` from being saved: the
+call is wrapped so any failure is logged and leaves `summary_text` `None`
+rather than aborting the completing `save()`.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from dag_extraction.extraction import extract_patient_record, extract_symptoms
@@ -43,6 +52,9 @@ from dag_extraction.pipeline import run_pipeline
 
 from .models import ChatSession, ChatTurn
 from .recommendations import Recommendation, recommend_for_record
+from .summary import IntakeSummary, SummaryGenerationError, generate_intake_summary
+
+logger = logging.getLogger(__name__)
 
 MAX_TURNS = 6
 
@@ -87,6 +99,7 @@ class TurnResult:
     missing_fields: tuple[str, ...]
     record: ExtractionRecord | None
     recommendation: Recommendation | None = None
+    summary: IntakeSummary | None = None
 
 
 def start_session(patient_id: str) -> ChatSession:
@@ -149,12 +162,25 @@ def submit_turn(session: ChatSession, patient_text: str) -> TurnResult:
     record, result = run_pipeline(combined, patient_id=session.patient_id)
     recommendation = recommend_for_record(result.record) if result.record is not None else None
 
+    summary: IntakeSummary | None = None
+    if result.record is not None:
+        try:
+            summary = generate_intake_summary(result.record, turn_count=turns_used)
+        except SummaryGenerationError:
+            logger.exception(
+                "Failed to generate doctor-facing summary for session %s; "
+                "saving the intake record without one.",
+                session.id,
+            )
+
     session.status = ChatSession.Status.COMPLETE
     session.extraction_record = record
     if recommendation is not None:
         session.recommendation_text = recommendation.text
         session.recommendation_grounded = recommendation.grounded
         session.recommendation_sources = [vars(ref) for ref in recommendation.sources]
+    if summary is not None:
+        session.summary_text = summary.text
     session.save(
         update_fields=[
             "status",
@@ -162,6 +188,7 @@ def submit_turn(session: ChatSession, patient_text: str) -> TurnResult:
             "recommendation_text",
             "recommendation_grounded",
             "recommendation_sources",
+            "summary_text",
         ]
     )
 
@@ -170,4 +197,5 @@ def submit_turn(session: ChatSession, patient_text: str) -> TurnResult:
         missing_fields=result.missing_fields,
         record=record,
         recommendation=recommendation,
+        summary=summary,
     )

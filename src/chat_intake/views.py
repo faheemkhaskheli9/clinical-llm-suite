@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -49,3 +49,14 @@ def session_view(request: HttpRequest, session_id) -> HttpResponse:
             "error": error,
         },
     )
+
+
+@login_required
+@permission_required("chat_intake.view_chatsession", raise_exception=True)
+def summary_view(request: HttpRequest, session_id) -> HttpResponse:
+    """Doctor-facing view of a completed session's summary (issue #15) --
+    gated on the `view_chatsession` permission (`Doctors` group) rather than
+    on being logged in alone, since it's not meant for the patient filling
+    out the intake."""
+    session = get_object_or_404(ChatSession, id=session_id)
+    return render(request, "chat_intake/summary.html", {"session": session})

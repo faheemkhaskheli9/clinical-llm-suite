@@ -1,8 +1,9 @@
 """Tests for issue #11: Port conversational patient intake chat flow."""
 import pytest
+from django.contrib.auth.models import Group
 from django.urls import reverse
 
-from chat_intake import conversation, recommendations
+from chat_intake import conversation, recommendations, summary
 from chat_intake.conversation import MAX_TURNS, submit_turn
 from chat_intake.models import ChatSession
 from clinical_core.rag import ingest
@@ -15,6 +16,13 @@ pytestmark = pytest.mark.django_db
 
 def _login(client, django_user_model, username="doc"):
     user = django_user_model.objects.create_user(username=username, password="pw12345")
+    client.force_login(user)
+    return user
+
+
+def _login_as_doctor(client, django_user_model, username="doctor-1"):
+    user = django_user_model.objects.create_user(username=username, password="pw12345")
+    user.groups.add(Group.objects.get(name="Doctors"))
     client.force_login(user)
     return user
 
@@ -273,3 +281,106 @@ def test_no_recommendation_is_persisted_when_extraction_finds_nothing_valid(clie
     session.refresh_from_db()
     assert session.extraction_record is None
     assert session.recommendation_text is None
+
+
+# --- issue #15: doctor-facing summary ------------------------------------
+
+
+def test_migration_seeds_doctors_group_with_view_permission():
+    group = Group.objects.get(name="Doctors")
+    codenames = sorted(p.codename for p in group.permissions.all())
+    assert codenames == ["view_chatsession"]
+
+
+def _complete_session(client, patient_id):
+    client.post(reverse("chat-intake-start"), {"patient_id": patient_id})
+    session = ChatSession.objects.get(patient_id=patient_id)
+    client.post(
+        reverse("chat-intake-session", kwargs={"session_id": session.id}),
+        {
+            "patient_text": (
+                "Temperature is 38.0C, heart rate 90 bpm, BP 120/80, SpO2 97%. "
+                "Cough for 2 days, severity 4. History of asthma diagnosed 2018."
+            )
+        },
+    )
+    session.refresh_from_db()
+    return session
+
+
+def test_completing_a_session_generates_and_persists_a_summary(client, django_user_model):
+    _login(client, django_user_model)
+
+    session = _complete_session(client, "p-11")
+
+    assert session.status == ChatSession.Status.COMPLETE
+    assert session.summary_text is not None
+    assert "p-11" in session.summary_text
+
+
+def test_summary_generation_failure_does_not_block_the_record_from_being_saved(
+    client, django_user_model, monkeypatch
+):
+    """Core acceptance criterion: a summary-generation failure must not
+    prevent the underlying intake record (status/extraction_record) from
+    being saved."""
+
+    def _boom(record, *, turn_count):
+        raise summary.SummaryGenerationError("simulated failure")
+
+    monkeypatch.setattr(conversation, "generate_intake_summary", _boom)
+    _login(client, django_user_model)
+
+    session = _complete_session(client, "p-12")
+
+    assert session.status == ChatSession.Status.COMPLETE
+    assert session.extraction_record is not None
+    assert session.summary_text is None
+
+
+def test_no_summary_is_persisted_when_extraction_finds_nothing_valid(client, django_user_model):
+    _login(client, django_user_model)
+    client.post(reverse("chat-intake-start"), {"patient_id": "p-13"})
+    session = ChatSession.objects.get(patient_id="p-13")
+    url = reverse("chat-intake-session", kwargs={"session_id": session.id})
+
+    for _ in range(MAX_TURNS):
+        client.post(url, {"patient_text": "Temperature is 99.0C."})
+
+    session.refresh_from_db()
+    assert session.extraction_record is None
+    assert session.summary_text is None
+
+
+def test_summary_view_requires_doctor_permission_not_just_login(client, django_user_model):
+    _login(client, django_user_model)
+    session = _complete_session(client, "p-14")
+
+    resp = client.get(reverse("chat-intake-summary", kwargs={"session_id": session.id}))
+
+    assert resp.status_code == 403
+
+
+def test_summary_view_unauthenticated_redirects_to_login(client, django_user_model):
+    _login(client, django_user_model)
+    session = _complete_session(client, "p-15")
+
+    # A fresh, unauthenticated client hitting the doctor view.
+    from django.test import Client
+
+    resp = Client().get(reverse("chat-intake-summary", kwargs={"session_id": session.id}))
+
+    assert resp.status_code == 302
+    assert resp.url.startswith(reverse("login"))
+
+
+def test_doctor_can_view_the_persisted_summary(client, django_user_model):
+    _login(client, django_user_model)
+    session = _complete_session(client, "p-16")
+
+    _login_as_doctor(client, django_user_model)
+    resp = client.get(reverse("chat-intake-summary", kwargs={"session_id": session.id}))
+
+    assert resp.status_code == 200
+    assert b"p-16" in resp.content
+    assert session.summary_text.encode() in resp.content

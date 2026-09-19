@@ -30,7 +30,14 @@ Review Queue (accept/reject/rate/comment) -> Approved Summary + Analytics
   returns a `[General guidance ...]`-prefixed generic recommendation with
   no sources, never an invented citation; the result (text, `grounded`
   flag, sources) is persisted on `ChatSession` so it survives a page
-  reload.
+  reload. Issue #15 added a doctor-facing summary
+  (`chat_intake.summary.generate_intake_summary`), generated the same time
+  as the recommendation and persisted on `ChatSession.summary_text`; a
+  generation failure is caught and logged in `conversation.submit_turn`
+  rather than blocking the record save, and the summary is only visible
+  through a separate `Doctors`-group-gated view (`chat-intake-summary`,
+  mirroring `review_portal`'s `Reviewers` group), not on the
+  patient-facing session page.
 - `dag_extraction` feature app — ported from `clinical-summary-promptflow`:
   schema-validated field extraction with missing-value handling,
   summarization node. Issue #8 added the actual extraction step (that repo

@@ -30,6 +30,14 @@ class ChatSession(models.Model):
     recommendation_text = models.TextField(null=True, blank=True)
     recommendation_grounded = models.BooleanField(default=False)
     recommendation_sources = models.JSONField(default=list, blank=True)
+    # Issue #15: doctor-facing summary of the intake conversation, generated
+    # once the session completes so a doctor can review it instead of
+    # reading the full turn-by-turn transcript. Null means either the
+    # session hasn't completed yet, or summary generation failed for a
+    # completed session (failure must never block `extraction_record` from
+    # being saved -- see `chat_intake.summary`) -- distinct from the empty
+    # string, which never occurs.
+    summary_text = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

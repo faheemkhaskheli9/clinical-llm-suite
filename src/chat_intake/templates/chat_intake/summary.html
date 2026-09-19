@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Intake Summary — Clinical LLM Suite</title>
+</head>
+<body>
+  <p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+  <h1>Intake Summary</h1>
+  <p>Patient: {{ session.patient_id }} — status: {{ session.status }}</p>
+
+  {% if session.summary_text %}
+    <div>
+      <h2>Summary</h2>
+      <p>{{ session.summary_text|linebreaksbr }}</p>
+    </div>
+  {% elif session.status == "complete" %}
+    <p>No summary is available for this session.</p>
+  {% else %}
+    <p>This intake session is not complete yet.</p>
+  {% endif %}
+</body>
+</html>
