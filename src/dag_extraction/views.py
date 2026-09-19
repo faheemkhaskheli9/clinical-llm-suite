@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
+from review_portal.submission import submit_review_item
+
 from .pipeline import run_pipeline
 
 
@@ -27,6 +29,16 @@ def extract(request: HttpRequest) -> HttpResponse:
             error = "Paste some conversation text to extract from."
         else:
             record, result = run_pipeline(text, patient_id=patient_id)
+            # A completed extraction is one with a usable draft summary --
+            # `summarization_failed` means there's nothing yet for a
+            # reviewer to review (issue #16 acceptance criterion covers
+            # *completed* extractions, not partial ones).
+            if record is not None and not record.summarization_failed:
+                submit_review_item(
+                    source="dag_extraction",
+                    patient_id=patient_id,
+                    summary=record.summary,
+                )
 
     return render(
         request,

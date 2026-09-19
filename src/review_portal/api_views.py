@@ -18,9 +18,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from pydantic import ValidationError
 
-from clinical_core.review import ReviewItem as ReviewItemSchema
-
 from .models import ReviewItem
+from .submission import submit_review_item
 
 # Fields a client may set when creating an item. `status`, `quality_rating`,
 # `reviewer_comments` are reviewer-decision fields (issue #7), not settable
@@ -81,12 +80,13 @@ def _create(request: HttpRequest) -> JsonResponse:
         )
 
     try:
-        validated = ReviewItemSchema(
-            source=payload.get("source", ""),
-            patient_id=payload.get("patient_id", ""),
-            summary=payload.get("summary", ""),
-            assigned_to=payload.get("assigned_to"),
-        )
+        with transaction.atomic():
+            item = submit_review_item(
+                source=payload.get("source", ""),
+                patient_id=payload.get("patient_id", ""),
+                summary=payload.get("summary", ""),
+                assigned_to=payload.get("assigned_to"),
+            )
     except ValidationError as exc:
         errors = [
             {"field": ".".join(str(p) for p in e["loc"]) or "(root)", "message": e["msg"]}
@@ -94,13 +94,6 @@ def _create(request: HttpRequest) -> JsonResponse:
         ]
         return JsonResponse({"errors": errors}, status=400)
 
-    with transaction.atomic():
-        item = ReviewItem.objects.create(
-            source=validated.source,
-            patient_id=validated.patient_id,
-            summary=validated.summary,
-            assigned_to=validated.assigned_to,
-        )
     return JsonResponse(_serialize(item), status=201)
 
 

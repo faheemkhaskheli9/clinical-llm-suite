@@ -40,6 +40,13 @@ the recommendation, summary generation is allowed to raise
 failure never blocks `extraction_record`/`status` from being saved: the
 call is wrapped so any failure is logged and leaves `summary_text` `None`
 rather than aborting the completing `save()`.
+
+Issue #16: once a session completes *with* a summary, that summary is also
+submitted into the shared review queue (`review_portal.submission`) so a
+reviewer sees it alongside Dag Extraction's submissions in one place. A
+session that completes without a summary (generation failed) has nothing
+review-worthy yet, so it is not submitted -- same rule `dag_extraction.views`
+applies to a failed summarization.
 """
 from __future__ import annotations
 
@@ -49,6 +56,7 @@ from dataclasses import dataclass
 from dag_extraction.extraction import extract_patient_record, extract_symptoms
 from dag_extraction.models import ExtractionRecord
 from dag_extraction.pipeline import run_pipeline
+from review_portal.submission import submit_review_item
 
 from .models import ChatSession, ChatTurn
 from .recommendations import Recommendation, recommend_for_record
@@ -191,6 +199,12 @@ def submit_turn(session: ChatSession, patient_text: str) -> TurnResult:
             "summary_text",
         ]
     )
+    if summary is not None:
+        submit_review_item(
+            source="chat_intake",
+            patient_id=session.patient_id,
+            summary=summary.text,
+        )
 
     return TurnResult(
         complete=True,
